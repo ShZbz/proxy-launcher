@@ -1,5 +1,7 @@
 /target
 /node_modules
+*.exe
+*.dll
 config.json
 crash.log*
 selftest.log
