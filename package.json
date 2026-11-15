@@ -1,0 +1,22 @@
+{
+  "name": "proxy-launcher",
+  "private": true,
+  "version": "0.2.2",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.5.0",
+    "vue": "^3.5.13"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.1.0",
+    "@vitejs/plugin-vue": "^5.2.3",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.8.2",
+    "vue-tsc": "^2.2.8"
+  }
+}

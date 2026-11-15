@@ -1,0 +1,8 @@
+{
+  "version": 1,
+  "test_url": "http://cp.cloudflare.com/generate_204",
+  "ip_url": "https://api.ipify.org",
+  "show_exit_ip": true,
+  "ports": [],
+  "rules": []
+}

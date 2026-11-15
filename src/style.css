@@ -1,0 +1,164 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+:root {
+  --bg: #F3F5F9;
+  --surface: #FFFFFF;
+  --surface-2: #EBF0F7;
+  --surface-hover: #F6F9FD;
+  --sidebar: #E7ECF4;
+  --border: #D8E0EC;
+  --card-border: #E2E8F2;
+  --card-border-hover: #94BCEB;
+  --card-selected-bg: #E8F1FF;
+  --card-selected-border: #2563EB;
+  --port-badge-bg: #EBF0F7;
+  --port-badge-hover: #DCE7F7;
+  --popup-bg: #FFFFFF;
+  --popup-hover: #EEF4FF;
+  --popup-active-bg: #E0ECFF;
+  --filter-chip-bg: #DBEAFE;
+  --filter-chip-hover: #BFDBFE;
+  --filter-chip-fg: #1D4ED8;
+  --text: #171B24;
+  --text-dim: #5C6678;
+  --text-on-accent: #FFFFFF;
+  --accent: #3B82F6;
+  --accent-hi: #2563EB;
+  --accent-soft: #E0ECFF;
+  --term-accent: #0D9488;
+  --term-hover: #0F766E;
+  --term-soft: #CCFBF1;
+  --shortcut-accent: #4F46E5;
+  --shortcut-soft: #E0E7FF;
+  --code-bg: #1E2430;
+  --code-fg: #E2E8F0;
+  --code-border: #333D4F;
+  --danger: #DC2626;
+  --danger-soft: #FEE2E2;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #12151B;
+  --surface: #1B1F28;
+  --surface-2: #242A36;
+  --surface-hover: #212734;
+  --sidebar: #0E1116;
+  --border: #2B3240;
+  --card-border: #252B38;
+  --card-border-hover: #456B9E;
+  --card-selected-bg: #16243A;
+  --card-selected-border: #60A5FA;
+  --port-badge-bg: #242A36;
+  --port-badge-hover: #2E3748;
+  --popup-bg: #1B1F28;
+  --popup-hover: #252D3D;
+  --popup-active-bg: #1A2B4C;
+  --filter-chip-bg: #1A2B4C;
+  --filter-chip-hover: #243B66;
+  --filter-chip-fg: #93C5FD;
+  --text: #ECF0F8;
+  --text-dim: #8B95A9;
+  --text-on-accent: #FFFFFF;
+  --accent: #60A5FA;
+  --accent-hi: #93C5FD;
+  --accent-soft: #1A2B4C;
+  --term-accent: #2DD4BF;
+  --term-hover: #5EEAD4;
+  --term-soft: #112E2B;
+  --shortcut-accent: #818CF8;
+  --shortcut-soft: #1E1B4B;
+  --code-bg: #0B0E14;
+  --code-fg: #E2E8F0;
+  --code-border: #232A38;
+  --danger: #F87171;
+  --danger-soft: #3B181B;
+  color-scheme: dark;
+}
+
+html,
+body,
+#app {
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", system-ui, -apple-system, sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-mono-code {
+  font-family: "Cascadia Mono", Consolas, "Courier New", monospace;
+}
+
+/* Subtle native-style scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(140, 152, 172, 0.35);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(140, 152, 172, 0.55);
+}
+
+/* Animations matching theme.py frames */
+@keyframes pulse-dot {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.82);
+  }
+}
+
+.animate-pulse-dot {
+  animation: pulse-dot 1.1s ease-in-out infinite;
+}
+
+@keyframes port-switch-flash {
+  0% {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.25);
+  }
+  50% {
+    border-color: var(--accent-hi);
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);
+  }
+  100% {
+    border-color: var(--card-border);
+    box-shadow: none;
+  }
+}
+
+.animate-port-flash {
+  animation: port-switch-flash 0.85s ease-out;
+}
+
+@keyframes success-flash {
+  0% {
+    border-color: #22C55E;
+    box-shadow: 0 0 0 2px rgba(34, 197, 94, 0.28);
+  }
+  100% {
+    border-color: var(--card-border);
+    box-shadow: none;
+  }
+}
+
+.animate-success-flash {
+  animation: success-flash 0.9s ease-out;
+}

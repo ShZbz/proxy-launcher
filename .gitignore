@@ -1,0 +1,7 @@
+/target
+/node_modules
+config.json
+crash.log*
+selftest.log
+launcher.log
+scratch/
