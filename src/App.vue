@@ -52,6 +52,7 @@ const config = ref<Config>({
   test_url: "http://cp.cloudflare.com/generate_204",
   ip_url: "https://api.ipify.org",
   show_exit_ip: true,
+  antigravity_cdp: false,
   ports: [],
   rules: [],
 });
@@ -190,12 +191,31 @@ async function persistConfig(): Promise<boolean> {
 async function loadInitialConfig(): Promise<void> {
   try {
     const loaded = await api.getConfig();
-    config.value = loaded;
+    config.value = {
+      ...loaded,
+      antigravity_cdp: Boolean(loaded.antigravity_cdp),
+    };
     setStatus(
       `就绪 · ${loaded.ports.length} 个端口 · ${loaded.rules.length} 条规则 · 支持一键打开代理终端与创建直连快捷方式`
     );
   } catch (err) {
     setStatus(`读取配置失败（预览模式或后端未连接）：${String(err)}`, "error");
+  }
+}
+
+async function handleToggleAntigravityCdp(): Promise<void> {
+  const prev = config.value.antigravity_cdp;
+  const next = !prev;
+  config.value.antigravity_cdp = next;
+  if (await persistConfig()) {
+    setStatus(
+      next
+        ? "已开启 Antigravity CDP 远程调试接口（软件启动与桌面快捷方式均自动注入）"
+        : "已关闭 Antigravity CDP 远程调试接口",
+      next ? "ok" : "info"
+    );
+  } else {
+    config.value.antigravity_cdp = prev;
   }
 }
 
@@ -766,8 +786,10 @@ onUnmounted(() => {
           :ports="config.ports"
           :probe-results="probeResults"
           :selected-port-id="selectedPortId"
+          :antigravity-cdp="config.antigravity_cdp"
           :is-dark="isDark"
           @clear-port-filter="handleSelectPort(null)"
+          @toggle-antigravity-cdp="handleToggleAntigravityCdp"
           @add-rule="handleAddRuleFlow"
           @edit-rule="openEditRuleModal"
           @delete-rules="handleDeleteRules"
@@ -860,6 +882,7 @@ onUnmounted(() => {
       :prefill-target="prefillTarget"
       :ports="config.ports"
       :default-port-id="defaultPortId"
+      :antigravity-cdp="config.antigravity_cdp"
       :is-dark="isDark"
       @close="closeRuleModal"
       @save="handleSaveRule"

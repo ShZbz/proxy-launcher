@@ -1,7 +1,7 @@
 use e2e_tests::harness::{CliRunner, MockProxyServer, ProcessHelper, TestEnv};
 use launcher_core::config::{load_from_path, load_or_default, save_atomic};
 use launcher_core::lnk::{create_shortcut, ShortcutParams};
-use launcher_core::models::{Config, Port};
+use launcher_core::models::{Config, Port, Rule};
 use launcher_core::probe::{probe_local_port, probe_upstream_http, ProbeError};
 use std::net::TcpListener;
 use std::path::PathBuf;
@@ -310,4 +310,76 @@ fn test_t3_08_port_failover_cycle() {
     let out_success = runner.run_with_config(&["--launch-rule", &rule_id], &cfg_path);
     out_success.assert_success();
     out_success.assert_stdout_contains(&format!("Successfully launched rule '{}'", rule_id));
+}
+
+#[test]
+fn test_t3_09_antigravity_cdp_injection_on_shortcut_fast_path() {
+    let env = TestEnv::new();
+    let mock = MockProxyServer::start_raw_tcp();
+    let cfg_path = env.subpath("cdp_config.json");
+
+    let agy_out = env.subpath("agy_args.txt");
+    let hermes_out = env.subpath("hermes_args.txt");
+
+    let agy_bat = env.write_file(
+        "Antigravity.bat",
+        &format!("@echo off\r\necho %* > \"{}\"\r\n", agy_out.display()),
+    );
+    let hermes_bat = env.write_file(
+        "Hermes.bat",
+        &format!("@echo off\r\necho %* > \"{}\"\r\n", hermes_out.display()),
+    );
+
+    let port = Port::new("clash", "127.0.0.1", mock.port());
+    let mut agy_rule = Rule::new("Antigravity", agy_bat.to_string_lossy(), &port.id);
+    agy_rule.args = "--proxy-bypass-list=<-loopback>".to_string();
+    let hermes_rule = Rule::new("Hermes", hermes_bat.to_string_lossy(), &port.id);
+
+    let agy_id = agy_rule.id.clone();
+    let hermes_id = hermes_rule.id.clone();
+
+    let mut config = Config::default();
+    config.antigravity_cdp = true;
+    config.add_port(port);
+    config.add_rule(agy_rule);
+    config.add_rule(hermes_rule);
+    save_atomic(&config, &cfg_path).unwrap();
+
+    let runner = CliRunner::new();
+
+    // 1. Launch Antigravity with CDP toggle ON -> receives CDP flags
+    runner.run_with_config(&["--launch-rule", &agy_id], &cfg_path).assert_success();
+    // 2. Launch Hermes with CDP toggle ON -> must NOT receive CDP flags
+    runner.run_with_config(&["--launch-rule", &hermes_id], &cfg_path).assert_success();
+
+    let wait_for_file = |path: &std::path::Path| -> String {
+        for _ in 0..40 {
+            if let Ok(content) = std::fs::read_to_string(path) {
+                if !content.trim().is_empty() {
+                    return content;
+                }
+            }
+            thread::sleep(Duration::from_millis(25));
+        }
+        panic!("Timed out waiting for child output file: {}", path.display());
+    };
+
+    let agy_args_on = wait_for_file(&agy_out);
+    assert!(agy_args_on.contains("--remote-debugging-port=0"), "got: {}", agy_args_on);
+    assert!(agy_args_on.contains("--remote-debugging-address=127.0.0.1"), "got: {}", agy_args_on);
+    assert!(agy_args_on.contains("--proxy-server="), "got: {}", agy_args_on);
+
+    let hermes_args = wait_for_file(&hermes_out);
+    assert!(!hermes_args.contains("--remote-debugging-port"), "Hermes got CDP flag: {}", hermes_args);
+    assert!(!hermes_args.contains("--remote-debugging-address"), "Hermes got CDP addr: {}", hermes_args);
+
+    // 3. Toggle CDP OFF and re-launch Antigravity -> no CDP flags
+    let _ = std::fs::remove_file(&agy_out);
+    config.antigravity_cdp = false;
+    save_atomic(&config, &cfg_path).unwrap();
+    runner.run_with_config(&["--launch-rule", &agy_id], &cfg_path).assert_success();
+
+    let agy_args_off = wait_for_file(&agy_out);
+    assert!(!agy_args_off.contains("--remote-debugging-port"), "CDP off still injected port: {}", agy_args_off);
+    assert!(!agy_args_off.contains("--remote-debugging-address"), "CDP off still injected addr: {}", agy_args_off);
 }

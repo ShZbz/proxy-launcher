@@ -4,6 +4,18 @@
 
 ---
 
+## [v0.2.3] - 2026-11-18
+
+### ✨ 新特性：Antigravity CDP 远程调试接口开关
+* **新增「CDP 远程调试接口」独立开关（仅对 Antigravity 生效）**：
+  * 在 [RuleWorkspace.vue](src/components/RuleWorkspace.vue) 顶栏新增「CDP 远程调试接口（仅 Antigravity）」开关，状态原子持久化至 `config.json` 的 `antigravity_cdp` 字段（默认 `false` 保持向后兼容），并在匹配的 Antigravity 规则行展示 `CDP` 状态徽章，在 [RuleModal.vue](src/components/RuleModal.vue) 中显示自动注入提示；
+  * 在 [models.rs](crates/launcher-core/src/models.rs) 与 [launcher.rs](crates/launcher-core/src/launcher.rs) 中实现 `Rule::is_antigravity()` 精准匹配及 `prepare_command_with_options` / `prepare_command_for_config` 注入逻辑：开启时自动追加 `--remote-debugging-port=0 --remote-debugging-address=127.0.0.1`（若规则自定义 `args` 中已显式配置对应参数则跳过防重复），非 Antigravity 规则不受影响；
+  * 无论通过软件界面点击启动，还是双击已生成的桌面 `.lnk` 直连快捷方式（`--launch-rule` 无界面极速通道），均实时读取开关状态并按需注入，无需重新生成快捷方式。
+* **测试与构建验证**：
+  * 新增 `launcher-core` 单元测试（规则识别、CDP 仅对 Antigravity 注入与去重、配置序列化兼容）与 `e2e-tests` 快捷方式快速路径端到端测试，`cargo test -p launcher-core -p launcher-cli -p e2e-tests` 共 `114` 项测试全部通过。
+
+---
+
 ## [v0.2.2] - 2026-11-15
 
 ### 🐛 代理兼容修复与工程文档同步

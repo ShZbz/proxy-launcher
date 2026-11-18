@@ -3,6 +3,7 @@
   "test_url": "http://cp.cloudflare.com/generate_204",
   "ip_url": "https://api.ipify.org",
   "show_exit_ip": true,
+  "antigravity_cdp": false,
   "ports": [],
   "rules": []
 }

@@ -9,6 +9,8 @@ pub const DEFAULT_TEST_URL: &str = "http://cp.cloudflare.com/generate_204";
 pub const DEFAULT_IP_URL: &str = "https://api.ipify.org";
 pub const NO_PROXY_VALUE: &str = "localhost,127.0.0.1,::1";
 pub const AICODE_ENDPOINT_URL_DEFAULT: &str = "https://localhost@aicode.googleapis.com";
+pub const CDP_REMOTE_DEBUG_PORT_FLAG: &str = "--remote-debugging-port=0";
+pub const CDP_REMOTE_DEBUG_ADDR_FLAG: &str = "--remote-debugging-address=127.0.0.1";
 
 fn default_version() -> u32 {
     CONFIG_VERSION
@@ -204,6 +206,32 @@ impl Rule {
     pub fn split_args(&self) -> Vec<String> {
         split_arguments(&self.args)
     }
+
+    /// Returns true if this rule targets Antigravity (agy) by rule name or executable filename.
+    pub fn is_antigravity(&self) -> bool {
+        let has_agy_token = |s: &str| {
+            s.split(|c: char| !c.is_ascii_alphanumeric())
+                .any(|tok| tok.eq_ignore_ascii_case("agy"))
+        };
+
+        let name_low = self.name.trim().to_ascii_lowercase();
+        if name_low.contains("antigravity") || has_agy_token(&name_low) {
+            return true;
+        }
+
+        let base = self
+            .exe
+            .trim()
+            .rsplit(['\\', '/'])
+            .next()
+            .unwrap_or("")
+            .to_ascii_lowercase();
+        let stem = match base.rfind('.') {
+            Some(idx) if idx > 0 => &base[..idx],
+            _ => &base,
+        };
+        stem.contains("antigravity") || has_agy_token(stem)
+    }
 }
 
 /// Splits a Windows command line string into tokens respecting double quotes.
@@ -259,6 +287,8 @@ pub struct Config {
     #[serde(default = "default_true")]
     pub show_exit_ip: bool,
     #[serde(default)]
+    pub antigravity_cdp: bool,
+    #[serde(default)]
     pub ports: Vec<Port>,
     #[serde(default)]
     pub rules: Vec<Rule>,
@@ -271,6 +301,7 @@ impl Default for Config {
             test_url: default_test_url(),
             ip_url: default_ip_url(),
             show_exit_ip: true,
+            antigravity_cdp: false,
             ports: Vec::new(),
             rules: Vec::new(),
         }

@@ -25,8 +25,28 @@ export interface Config {
   test_url: string;
   ip_url: string;
   show_exit_ip: boolean;
+  antigravity_cdp: boolean;
   ports: Port[];
   rules: Rule[];
+}
+
+export function isAntigravityRule(rule: Pick<Rule, "name" | "exe">): boolean {
+  const hasAgyToken = (val: string): boolean =>
+    val
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .some((tok) => tok === "agy");
+
+  const name = (rule.name || "").trim().toLowerCase();
+  if (name.includes("antigravity") || hasAgyToken(name)) {
+    return true;
+  }
+
+  const normExe = (rule.exe || "").trim().replace(/\//g, "\\");
+  const base = normExe.split("\\").pop()?.toLowerCase() || "";
+  const dotIdx = base.lastIndexOf(".");
+  const stem = dotIdx > 0 ? base.slice(0, dotIdx) : base;
+  return stem.includes("antigravity") || hasAgyToken(stem);
 }
 
 export interface ProbeResult {

@@ -2,7 +2,7 @@
 import { computed, nextTick, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { api } from '../api'
 import type { InjectionMode, Port, ResolvedTarget, Rule } from '../types'
-import { generateId } from '../types'
+import { generateId, isAntigravityRule } from '../types'
 
 const props = defineProps<{
   visible: boolean
@@ -10,6 +10,7 @@ const props = defineProps<{
   prefillTarget: ResolvedTarget | null
   ports: Port[]
   defaultPortId: string
+  antigravityCdp: boolean
   isDark: boolean
 }>()
 
@@ -447,6 +448,20 @@ onBeforeUnmount(() => {
               />
             </div>
           </div>
+
+          <!-- Antigravity CDP Injection Hint -->
+          <p
+            v-if="antigravityCdp && isAntigravityRule(form)"
+            class="text-[11px] leading-snug px-2.5 py-1.5 rounded-md border"
+            :class="
+              isDark
+                ? 'bg-[#1A2B4C]/40 border-[#3B82F6]/30 text-[#93C5FD]'
+                : 'bg-[#EFF6FF] border-[#BFDBFE] text-[#1D4ED8]'
+            "
+          >
+            已开启「CDP 远程调试接口」：启动此规则时将自动注入
+            <code class="font-mono">--remote-debugging-port=0 --remote-debugging-address=127.0.0.1</code>
+          </p>
 
           <!-- Injection Mode Cards -->
           <div>

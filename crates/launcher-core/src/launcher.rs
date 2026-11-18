@@ -4,7 +4,10 @@
 //! with null stdio streams and injected proxy environment variables (`HTTP_PROXY`, `HTTPS_PROXY`,
 //! `ALL_PROXY`, lowercase variants, `NO_PROXY`, and `AICODE_ENDPOINT_URL`).
 
-use crate::models::{Config, Port, Rule, AICODE_ENDPOINT_URL_DEFAULT, NO_PROXY_VALUE};
+use crate::models::{
+    Config, Port, Rule, AICODE_ENDPOINT_URL_DEFAULT, CDP_REMOTE_DEBUG_ADDR_FLAG,
+    CDP_REMOTE_DEBUG_PORT_FLAG, NO_PROXY_VALUE,
+};
 use crate::probe::probe_local_port;
 use std::fmt;
 use std::io;
@@ -116,8 +119,31 @@ pub fn inject_proxy_env(cmd: &mut Command, host: &str, port: u16) {
     }
 }
 
-/// Prepares the Command for spawning according to the rule and port configuration.
-pub fn prepare_command(rule: &Rule, port: &Port) -> Result<Command, LaunchError> {
+fn has_cli_flag(args: &[String], flag_name: &str) -> bool {
+    args.iter().any(|arg| {
+        arg.eq_ignore_ascii_case(flag_name)
+            || (arg.len() > flag_name.len()
+                && arg.as_bytes()[flag_name.len()] == b'='
+                && arg[..flag_name.len()].eq_ignore_ascii_case(flag_name))
+    })
+}
+
+/// Appends Antigravity CDP remote debugging flags when enabled and not already present.
+fn append_antigravity_cdp_args(args: &mut Vec<String>) {
+    if !has_cli_flag(args, "--remote-debugging-port") {
+        args.push(CDP_REMOTE_DEBUG_PORT_FLAG.to_string());
+    }
+    if !has_cli_flag(args, "--remote-debugging-address") {
+        args.push(CDP_REMOTE_DEBUG_ADDR_FLAG.to_string());
+    }
+}
+
+/// Prepares the Command for spawning according to the rule, port, and launch options.
+pub fn prepare_command_with_options(
+    rule: &Rule,
+    port: &Port,
+    antigravity_cdp: bool,
+) -> Result<Command, LaunchError> {
     if rule.exe.trim().to_lowercase().starts_with("shell:appsfolder") {
         return Err(LaunchError::UwpNotSupported);
     }
@@ -159,9 +185,26 @@ pub fn prepare_command(rule: &Rule, port: &Port) -> Result<Command, LaunchError>
     if rule.mode == "flag" || rule.mode == "both" {
         args.push(rule.formatted_flag(port));
     }
+    if antigravity_cdp && rule.is_antigravity() {
+        append_antigravity_cdp_args(&mut args);
+    }
     cmd.args(args);
 
     Ok(cmd)
+}
+
+/// Prepares the Command for spawning using top-level configuration options.
+pub fn prepare_command_for_config(
+    config: &Config,
+    rule: &Rule,
+    port: &Port,
+) -> Result<Command, LaunchError> {
+    prepare_command_with_options(rule, port, config.antigravity_cdp)
+}
+
+/// Prepares the Command for spawning according to the rule and port configuration.
+pub fn prepare_command(rule: &Rule, port: &Port) -> Result<Command, LaunchError> {
+    prepare_command_with_options(rule, port, false)
 }
 
 /// Launches a configured rule detached with injected proxy environment variables.
@@ -185,7 +228,7 @@ pub fn launch_rule(config: &Config, rule_id_or_name: &str) -> Result<u32, Launch
         }
     })?;
 
-    let mut cmd = prepare_command(rule, port)?;
+    let mut cmd = prepare_command_for_config(config, rule, port)?;
 
     match cmd.spawn() {
         Ok(child) => Ok(child.id()),

@@ -6,6 +6,7 @@ import {
   getAvatarLetter,
   getModeStyle,
   getReasonStyle,
+  isAntigravityRule,
 } from '../types'
 
 const props = defineProps<{
@@ -13,11 +14,13 @@ const props = defineProps<{
   ports: Port[]
   probeResults: Record<string, ProbeResult>
   selectedPortId: string | null
+  antigravityCdp: boolean
   isDark: boolean
 }>()
 
 const emit = defineEmits<{
   'clear-port-filter': []
+  'toggle-antigravity-cdp': []
   'add-rule': []
   'edit-rule': [rule: Rule]
   'delete-rules': [ruleIds: string[]]
@@ -442,8 +445,57 @@ onBeforeUnmount(() => {
         <span class="opacity-75 ml-0.5">✕</span>
       </button>
 
-      <!-- Search + Select All (right side) -->
-      <div class="ml-auto flex items-center gap-2">
+      <!-- CDP Toggle + Search + Select All (right side) -->
+      <div class="ml-auto flex items-center gap-2 flex-wrap">
+        <button
+          type="button"
+          role="switch"
+          :aria-checked="antigravityCdp"
+          class="h-8 px-2.5 rounded-lg border text-xs font-medium inline-flex items-center gap-1.5 transition-colors cursor-pointer shrink-0"
+          :class="
+            antigravityCdp
+              ? isDark
+                ? 'bg-[#1A2B4C]/75 border-[#3B82F6]/60 text-[#ECF0F8]'
+                : 'bg-[#EFF6FF] border-[#93C5FD] text-[#1D4ED8]'
+              : isDark
+                ? 'bg-[#1B1F28] border-[#2B3240] text-[#8B95A9] hover:bg-[#242A36] hover:text-[#ECF0F8]'
+                : 'bg-white border-[#D8E0EC] text-[#5C6678] hover:bg-[#EBF0F7] hover:text-[#171B24]'
+          "
+          title="开启后，仅对 Antigravity (agy) 生效：在软件内打开或用生成的桌面快捷方式启动时自动注入 --remote-debugging-port=0 --remote-debugging-address=127.0.0.1"
+          @click="emit('toggle-antigravity-cdp')"
+        >
+          <span>CDP 远程调试接口</span>
+          <span
+            class="px-1.5 py-[1px] rounded text-[10px] font-semibold leading-tight"
+            :class="
+              antigravityCdp
+                ? isDark
+                  ? 'bg-[#243B66] text-[#93C5FD]'
+                  : 'bg-[#DBEAFE] text-[#1D4ED8]'
+                : isDark
+                  ? 'bg-[#242A36] text-[#8B95A9]'
+                  : 'bg-[#EBF0F7] text-[#5C6678]'
+            "
+          >
+            仅 Antigravity
+          </span>
+          <span
+            class="relative w-7 h-4 rounded-full transition-colors shrink-0 ml-0.5"
+            :class="
+              antigravityCdp
+                ? 'bg-[#3B82F6]'
+                : isDark
+                  ? 'bg-[#2B3240]'
+                  : 'bg-[#CBD5E1]'
+            "
+          >
+            <span
+              class="absolute top-0.5 left-0.5 w-3 h-3 rounded-full bg-white shadow transition-transform"
+              :class="antigravityCdp ? 'translate-x-3' : 'translate-x-0'"
+            />
+          </span>
+        </button>
+
         <div class="relative flex items-center">
           <svg
             class="w-3.5 h-3.5 absolute left-2.5 pointer-events-none"
@@ -460,8 +512,8 @@ onBeforeUnmount(() => {
             ref="searchInputRef"
             v-model="searchQuery"
             type="text"
-            placeholder="搜索名称或路径… (Ctrl+F)"
-            class="h-8 w-[220px] pl-8 pr-7 rounded-lg border text-xs outline-none transition-colors"
+            placeholder="搜索规则… (Ctrl+F)"
+            class="h-8 w-[180px] pl-8 pr-7 rounded-lg border text-xs outline-none transition-colors"
             :class="
               isDark
                 ? 'bg-[#1B1F28] border-[#2B3240] text-[#ECF0F8] placeholder-[#5C6678] focus:border-[#60A5FA]'
@@ -636,6 +688,14 @@ onBeforeUnmount(() => {
               :class="isDark ? 'bg-[#242A36] text-[#8B95A9]' : 'bg-[#EBF0F7] text-[#5C6678]'"
             >
               {{ rule.source }}
+            </span>
+            <span
+              v-if="antigravityCdp && isAntigravityRule(rule)"
+              class="px-1.5 py-[1px] rounded text-[10px] font-bold shrink-0"
+              :class="isDark ? 'bg-[#1A2B4C] text-[#60A5FA]' : 'bg-[#DBEAFE] text-[#1D4ED8]'"
+              title="已开启 CDP 远程调试接口：启动时将自动注入 --remote-debugging-port=0 --remote-debugging-address=127.0.0.1"
+            >
+              CDP
             </span>
           </div>
           <div

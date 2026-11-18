@@ -8,7 +8,7 @@
 
 无需安装 Rust、Node.js 或任何编译环境，直接下载便携压缩包解压即可运行：
 
-1. 前往本仓库的 **[GitHub Releases](https://github.com/ShZbz/proxy-launcher/releases)** 页面，在最新版本中下载 `proxy-launcher-<version>-windows-x64.zip`（例如 `proxy-launcher-v0.2.2-windows-x64.zip`）。
+1. 前往本仓库的 **[GitHub Releases](https://github.com/ShZbz/proxy-launcher/releases)** 页面，在最新版本中下载 `proxy-launcher-<version>-windows-x64.zip`（例如 `proxy-launcher-v0.2.3-windows-x64.zip`）。
 2. 将压缩包完整解压到任意目录（建议固定文件夹，例如 `D:\Tools\proxy-launcher\`），解压后目录包含以下文件：
    - `proxy-launcher.exe`：独立桌面主程序（双击即可打开图形界面；携带 `--launch-rule` 时走无 WebView 极速直连通道）
    - `WebView2Loader.dll`：WebView2 运行时加载器（须与 `proxy-launcher.exe` 位于同一目录）

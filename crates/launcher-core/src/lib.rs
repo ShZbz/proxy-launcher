@@ -12,11 +12,15 @@ pub mod probe;
 
 // Re-exports for convenience
 pub use config::{load_from_path, load_or_default, save_atomic, ConfigError};
-pub use launcher::{build_proxy_env, inject_proxy_env, launch_rule, prepare_command, LaunchError};
+pub use launcher::{
+    build_proxy_env, inject_proxy_env, launch_rule, prepare_command, prepare_command_for_config,
+    prepare_command_with_options, LaunchError,
+};
 pub use lnk::{create_shortcut, create_shortcut_for_rule, get_desktop_dir, sanitize_filename, ShortcutError, ShortcutParams};
 pub use models::{
-    split_arguments, Config, Port, Rule, AICODE_ENDPOINT_URL_DEFAULT, CONFIG_VERSION,
-    DEFAULT_FLAG_TEMPLATE, DEFAULT_IP_URL, DEFAULT_TEST_URL, NO_PROXY_VALUE,
+    split_arguments, Config, Port, Rule, AICODE_ENDPOINT_URL_DEFAULT, CDP_REMOTE_DEBUG_ADDR_FLAG,
+    CDP_REMOTE_DEBUG_PORT_FLAG, CONFIG_VERSION, DEFAULT_FLAG_TEMPLATE, DEFAULT_IP_URL,
+    DEFAULT_TEST_URL, NO_PROXY_VALUE,
 };
 pub use probe::{probe_local_port, probe_upstream_http, ProbeError};
 

@@ -385,4 +385,103 @@ fn test_effective_cwd_and_flag_formatting() {
     );
 }
 
+#[test]
+fn test_is_antigravity_rule_detection() {
+    let agy_by_exe = Rule::new(
+        "My Editor",
+        r"C:\Program Files\Antigravity\Antigravity.exe",
+        "p1",
+    );
+    assert!(agy_by_exe.is_antigravity());
+
+    let agy_by_name = Rule::new("agy", r"C:\Windows\System32\cmd.exe", "p1");
+    assert!(agy_by_name.is_antigravity());
+
+    let agy_by_token = Rule::new("AGY (Pro)", r"C:\Windows\System32\cmd.exe", "p1");
+    assert!(agy_by_token.is_antigravity());
+
+    let hermes = Rule::new("Hermes", r"C:\Apps\Hermes\Hermes.exe", "p1");
+    assert!(!hermes.is_antigravity());
+
+    let false_substring = Rule::new("Pedagogy", r"C:\Apps\Pedagogy\tool.exe", "p1");
+    assert!(!false_substring.is_antigravity());
+
+    let folder_only = Rule::new("Helper", r"C:\antigravity\helper.exe", "p1");
+    assert!(!folder_only.is_antigravity());
+}
+
+#[test]
+fn test_cdp_injection_only_for_antigravity_when_enabled() {
+    let port = Port::new("clash", "127.0.0.1", 7890);
+    let safe_exe = r"C:\Windows\System32\cmd.exe";
+
+    let mut agy_rule = Rule::new("Antigravity", safe_exe, &port.id);
+    agy_rule.args = "--proxy-bypass-list=<-loopback>".to_string();
+    agy_rule.mode = "both".to_string();
+
+    let mut other_rule = Rule::new("Hermes", safe_exe, &port.id);
+    other_rule.mode = "both".to_string();
+
+    let mut cfg = Config::default();
+    assert!(!cfg.antigravity_cdp);
+
+    // 1. Disabled by default: neither rule receives CDP flags
+    let cmd_off = prepare_command_for_config(&cfg, &agy_rule, &port).unwrap();
+    let args_off: Vec<String> = cmd_off.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert!(!args_off.iter().any(|a| a.starts_with("--remote-debugging-port")));
+    assert!(!args_off.iter().any(|a| a.starts_with("--remote-debugging-address")));
+
+    // 2. Enabled: Antigravity rule receives both CDP flags, Hermes rule does not
+    cfg.antigravity_cdp = true;
+    let cmd_agy = prepare_command_for_config(&cfg, &agy_rule, &port).unwrap();
+    let args_agy: Vec<String> = cmd_agy.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert_eq!(
+        args_agy,
+        vec![
+            "--proxy-bypass-list=<-loopback>",
+            "--proxy-server=http://127.0.0.1:7890",
+            "--remote-debugging-port=0",
+            "--remote-debugging-address=127.0.0.1",
+        ]
+    );
+
+    let cmd_other = prepare_command_for_config(&cfg, &other_rule, &port).unwrap();
+    let args_other: Vec<String> = cmd_other.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert!(!args_other.iter().any(|a| a.starts_with("--remote-debugging-port")));
+    assert!(!args_other.iter().any(|a| a.starts_with("--remote-debugging-address")));
+
+    // 3. Env-only mode still injects CDP flags for Antigravity when enabled
+    let mut agy_env_rule = agy_rule.clone();
+    agy_env_rule.mode = "env".to_string();
+    let cmd_env = prepare_command_for_config(&cfg, &agy_env_rule, &port).unwrap();
+    let args_env: Vec<String> = cmd_env.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert!(args_env.contains(&"--remote-debugging-port=0".to_string()));
+    assert!(args_env.contains(&"--remote-debugging-address=127.0.0.1".to_string()));
+
+    // 4. Existing --remote-debugging-port in custom args is not duplicated
+    let mut agy_custom = agy_rule.clone();
+    agy_custom.args = "--remote-debugging-port=9222".to_string();
+    let cmd_custom = prepare_command_for_config(&cfg, &agy_custom, &port).unwrap();
+    let args_custom: Vec<String> = cmd_custom.get_args().map(|a| a.to_string_lossy().into_owned()).collect();
+    assert_eq!(
+        args_custom
+            .iter()
+            .filter(|a| a.starts_with("--remote-debugging-port"))
+            .count(),
+        1
+    );
+    assert!(args_custom.contains(&"--remote-debugging-port=9222".to_string()));
+    assert!(args_custom.contains(&"--remote-debugging-address=127.0.0.1".to_string()));
+}
+
+#[test]
+fn test_config_antigravity_cdp_roundtrip() {
+    let mut cfg = Config::default();
+    assert!(!cfg.antigravity_cdp);
+    cfg.antigravity_cdp = true;
+    let json = serde_json::to_string(&cfg).unwrap();
+    let reloaded: Config = serde_json::from_str(&json).unwrap();
+    assert!(reloaded.antigravity_cdp);
+}
+
 
